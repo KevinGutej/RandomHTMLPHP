@@ -44,41 +44,74 @@
             margin-top: 20px;
             font-size: 1.2em;
         }
+        .scoreboard {
+            margin-top: 20px;
+            font-size: 1em;
+            color: #555;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Guess the Number!</h1>
+        <h1>Guess the Number Game!</h1>
         <p>I have chosen a number between 1 and 100. Can you guess it?</p>
+
+        <?php
+        session_start();
+        if (!isset($_SESSION['random_number'])) {
+            $_SESSION['random_number'] = rand(1, 100);
+            $_SESSION['lives'] = 5;
+            $_SESSION['attempts'] = 0;
+        }
+
+        if (isset($_POST['reset'])) {
+            unset($_SESSION['random_number']);
+            unset($_SESSION['lives']);
+            unset($_SESSION['attempts']);
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
+        }
+
+        $message = "";
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guess'])) {
+            $guess = (int)$_POST['guess'];
+            $randomNumber = $_SESSION['random_number'];
+            $_SESSION['attempts']++;
+
+            if ($guess === $randomNumber) {
+                $message = "<p style='color: green;'>Congratulations! You guessed the number <strong>$randomNumber</strong> correctly in <strong>" . $_SESSION['attempts'] . "</strong> attempts!</p>";
+                unset($_SESSION['random_number']);
+                unset($_SESSION['lives']);
+            } elseif ($guess < $randomNumber) {
+                $_SESSION['lives']--;
+                $message = "<p style='color: orange;'>Too low! Try a higher number.</p>";
+            } else {
+                $_SESSION['lives']--;
+                $message = "<p style='color: orange;'>Too high! Try a lower number.</p>";
+            }
+
+            if ($_SESSION['lives'] <= 0) {
+                $message = "<p style='color: red;'>Game over! You've run out of lives. The correct number was <strong>$randomNumber</strong>.</p>";
+                unset($_SESSION['random_number']);
+                unset($_SESSION['lives']);
+            }
+        }
+        ?>
 
         <form method="POST">
             <input type="number" name="guess" placeholder="Enter your guess" required min="1" max="100">
             <button type="submit">Submit</button>
+            <button type="submit" name="reset" style="background-color: #dc3545;">Reset</button>
         </form>
 
         <div class="result">
-            <?php
-            session_start();
+            <?php echo $message; ?>
+        </div>
 
-            // Generate a random number if not already set
-            if (!isset($_SESSION['random_number'])) {
-                $_SESSION['random_number'] = rand(1, 100);
-            }
-
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $guess = (int)$_POST['guess'];
-                $randomNumber = $_SESSION['random_number'];
-
-                if ($guess === $randomNumber) {
-                    echo "<p style='color: green;'>Congratulations! You guessed the number $randomNumber correctly!</p>";
-                    unset($_SESSION['random_number']); // Reset the game
-                } elseif ($guess < $randomNumber) {
-                    echo "<p style='color: orange;'>Too low! Try a higher number.</p>";
-                } else {
-                    echo "<p style='color: orange;'>Too high! Try a lower number.</p>";
-                }
-            }
-            ?>
+        <div class="scoreboard">
+            <p>Lives Remaining: <strong><?php echo $_SESSION['lives'] ?? 0; ?></strong></p>
+            <p>Attempts Made: <strong><?php echo $_SESSION['attempts'] ?? 0; ?></strong></p>
         </div>
     </div>
 </body>
