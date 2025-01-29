@@ -49,6 +49,11 @@
             font-size: 1em;
             color: #555;
         }
+        .hint {
+            margin-top: 10px;
+            font-size: 1em;
+            color: #6a5acd;
+        }
     </style>
 </head>
 <body>
@@ -62,17 +67,20 @@
             $_SESSION['random_number'] = rand(1, 100);
             $_SESSION['lives'] = 5;
             $_SESSION['attempts'] = 0;
+            $_SESSION['hints'] = 2;
         }
 
         if (isset($_POST['reset'])) {
             unset($_SESSION['random_number']);
             unset($_SESSION['lives']);
             unset($_SESSION['attempts']);
+            unset($_SESSION['hints']);
             header("Location: " . $_SERVER['PHP_SELF']);
             exit;
         }
 
         $message = "";
+        $hint_message = "";
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guess'])) {
             $guess = (int)$_POST['guess'];
@@ -83,6 +91,7 @@
                 $message = "<p style='color: green;'>Congratulations! You guessed the number <strong>$randomNumber</strong> correctly in <strong>" . $_SESSION['attempts'] . "</strong> attempts!</p>";
                 unset($_SESSION['random_number']);
                 unset($_SESSION['lives']);
+                unset($_SESSION['hints']);
             } elseif ($guess < $randomNumber) {
                 $_SESSION['lives']--;
                 $message = "<p style='color: orange;'>Too low! Try a higher number.</p>";
@@ -95,7 +104,14 @@
                 $message = "<p style='color: red;'>Game over! You've run out of lives. The correct number was <strong>$randomNumber</strong>.</p>";
                 unset($_SESSION['random_number']);
                 unset($_SESSION['lives']);
+                unset($_SESSION['hints']);
             }
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hint']) && $_SESSION['hints'] > 0) {
+            $randomNumber = $_SESSION['random_number'];
+            $hint_message = "<p class='hint'>Hint: The number is " . ($randomNumber % 2 == 0 ? "even" : "odd") . "!</p>";
+            $_SESSION['hints']--;
         }
         ?>
 
@@ -103,15 +119,21 @@
             <input type="number" name="guess" placeholder="Enter your guess" required min="1" max="100">
             <button type="submit">Submit</button>
             <button type="submit" name="reset" style="background-color: #dc3545;">Reset</button>
+            <button type="submit" name="hint" style="background-color: #28a745;" <?php echo ($_SESSION['hints'] <= 0) ? 'disabled' : ''; ?>>Hint</button>
         </form>
 
         <div class="result">
             <?php echo $message; ?>
         </div>
 
+        <div class="hint">
+            <?php echo $hint_message; ?>
+        </div>
+
         <div class="scoreboard">
             <p>Lives Remaining: <strong><?php echo $_SESSION['lives'] ?? 0; ?></strong></p>
             <p>Attempts Made: <strong><?php echo $_SESSION['attempts'] ?? 0; ?></strong></p>
+            <p>Hints Remaining: <strong><?php echo $_SESSION['hints'] ?? 0; ?></strong></p>
         </div>
     </div>
 </body>
